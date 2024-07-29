@@ -79,7 +79,7 @@ output "ebs_csi_irsa_role_arn" {
   value       = module.ebs_csi_irsa_role.iam_role_arn
 }
 
-output "lb_role_arn" {
+output "lb_irsa_role_arn" {
   description = "The ARN of the Load Balancer Controller IRSA role"
   value       = module.lb_role.iam_role_arn
 }

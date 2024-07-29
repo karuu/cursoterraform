@@ -257,6 +257,8 @@ resource "aws_security_group_rule" "cluster_nodes_communication" {
   type                     = "ingress"
 }
 
+
+
 #######################################################################
 # ROLES IAM
 #######################################################################
@@ -402,7 +404,7 @@ resource "aws_instance" "test_instance" {
 }
 */
 
-############################## TEST CON MODULOS #############################
+############################## TEST CON MÓDULOS #############################
 
 
 module "eks" {
@@ -457,18 +459,18 @@ module "eks" {
       resolve_conflicts        = "OVERWRITE"
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
       #Resolución de DNS dentro del clúster
-      coredns = {
-      # :)
-      }
-      #mantiene las reglas de red en los pods y svc dentro del clúster
-      # Es decir, solicitudes correctamente dirigidas + LB básico
-      kube-proxy = {
+      # coredns = {
+      # # :)
+      # }
+      # #mantiene las reglas de red en los pods y svc dentro del clúster
+      # # Es decir, solicitudes correctamente dirigidas + LB básico
+      # kube-proxy = {
 
-      }
-      #Ingregración del clúster con la red VPC de AWS
-      vpc-cni = {
-        #most_recent = true
-      }
+      # }
+      # #Ingregración del clúster con la red VPC de AWS
+      # vpc-cni = {
+      #   most_recent = true
+      # }
     }
 
   }
@@ -535,7 +537,17 @@ module "lb_role" {
   }
   #depends_on = [module.eks]
 }
-
+resource "kubernetes_service_account" "aws_load_balancer_controller_sa" {
+  metadata {
+    name      = "aws-load-balancer-controller"
+    namespace = "kube-system"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = module.lb_role.iam_role_arn
+      # Buscar. al parecer se recomieda para mejorar la latencia y disponibilidad
+      # "eks.amazonaws.com/sts-regional-endpoints" = "true"
+    }
+  }
+}
 # https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
 resource "helm_release" "lb" {
   name       = "aws-load-balancer-controller"
@@ -590,14 +602,3 @@ resource "helm_release" "lb" {
   }
 }
 
-resource "kubernetes_service_account" "aws_load_balancer_controller_sa" {
-  metadata {
-    name      = "aws-load-balancer-controller"
-    namespace = "kube-system"
-    annotations = {
-      "eks.amazonaws.com/role-arn" = module.lb_role.iam_role_arn
-      # Buscar. al parecer se recomieda para mejorar la latencia y disponibilidad
-      # "eks.amazonaws.com/sts-regional-endpoints" = "true"
-    }
-  }
-}
