@@ -197,7 +197,7 @@ resource "aws_security_group" "ingress_ssh" {
 
 # Cluster EKS SG
 resource "aws_security_group" "eks_cluster_sg" {
-  name        = "eks-cluster-sg"
+  name        = "${var.cluster_name}-sg"
   description = "Security group for EKS cluster"
   vpc_id      = aws_vpc.vpc-tarea.id
 
@@ -456,19 +456,19 @@ module "eks" {
       # addon_version =   data.aws_eks_addon_version.ebs_csi.version
       resolve_conflicts        = "OVERWRITE"
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
-      # Resolución de DNS dentro del clúster
-      # coredns = {
-      # # :)
-      # }
-      # #mantiene las reglas de red en los pods y svc dentro del clúster
-      # # Es decir, solicitudes correctamente dirigidas + LB básico
-      # kube-proxy = {
+      #Resolución de DNS dentro del clúster
+      coredns = {
+      # :)
+      }
+      #mantiene las reglas de red en los pods y svc dentro del clúster
+      # Es decir, solicitudes correctamente dirigidas + LB básico
+      kube-proxy = {
 
-      # }
-      # #Ingregración del clúster con la red VPC de AWS
-      # vpc-cni = {
-      #   #most_recent = true
-      # }
+      }
+      #Ingregración del clúster con la red VPC de AWS
+      vpc-cni = {
+        #most_recent = true
+      }
     }
 
   }
@@ -576,8 +576,7 @@ resource "helm_release" "lb" {
   set {
     name  = "serviceAccount.name"
     value = "aws-load-balancer-controller"
-    #en lugar de crear ese ServiceAccount, usar el definido anteriormente
-    #value = kubernetes_service_account.aws_load_balancer_controller_sa.metadata[0].name
+    #en lugar de crear ese ServiceAccount, usar el definido con terraform
   }
 
   set {
@@ -588,8 +587,6 @@ resource "helm_release" "lb" {
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = module.lb_role.iam_role_arn
-    #value = aws_iam_role.aws_load_balancer_controller_role.arn #
-    #value = module.aws_load_balancer_controller_irsa_role.iam_role_arn
   }
 }
 
@@ -599,7 +596,6 @@ resource "kubernetes_service_account" "aws_load_balancer_controller_sa" {
     namespace = "kube-system"
     annotations = {
       "eks.amazonaws.com/role-arn" = module.lb_role.iam_role_arn
-      # aws_iam_role.aws_load_balancer_controller_role.arn
       # Buscar. al parecer se recomieda para mejorar la latencia y disponibilidad
       # "eks.amazonaws.com/sts-regional-endpoints" = "true"
     }

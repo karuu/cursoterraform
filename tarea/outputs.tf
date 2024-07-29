@@ -1,71 +1,33 @@
-
-
-/*
-output "eks_cluster_endpoint" {
-  value = aws_eks_cluster.eks_cluster.endpoint #aws_eks_cluster.main.endpoint
-}
-
-output "eks_cluster_name" {
-  value = aws_eks_cluster.eks_cluster.name #aws_eks_cluster.main.name
-}
-
-
-
-
+ 
+############ RDS Y EC2 ASOCIADO ######################
 /*
 
 output "rds_endpoint" {
-  value = aws_db_instance.eks_db.endpoint
+  description = "The connection endpoint for the RDS instance"
+  value       = aws_db_instance.eks_db.endpoint
 }
+
 output "ec2_public_ip" {
-  value = aws_instance.test_instance.public_ip
-}*/
+  description = "The public IP address of the EC2 instance"
+  value       = aws_instance.test_instance.public_ip
+}
+
+output "ssh_command" {
+  description = "SSH command to connect to the EC2 instance"
+  value       = "ssh -i ~/.ssh/my_key ubuntu@${aws_instance.test_instance.public_ip}"
+}
+*/
 
 
 
 ############ Version con módulos ####################
 
 
-/*
-# Output the cluster name
-output "eks_cluster_name" {
-  value = module.eks.cluster_name
-}
-
-# Output the cluster endpoint
-output "eks_cluster_endpoint" {
-  value = module.eks.cluster_endpoint
-}
-
-# Output the node security group ID
-output "node_security_group_id" {
-  value = module.eks.node_security_group_id
-}
-
-
-# Output the Kubernetes configuration file
-output "kubeconfig" {
-  value = module.eks.kubeconfig
-}
-
-output "config_map_aws_auth" {
-  description = "A kubernetes configuration to authenticate to this EKS cluster."
-  value       = module.eks.config_map_aws_auth
-}
-
-*/
 
 
 output "oicd_provider_url" {
   value = module.eks.cluster_oidc_issuer_url
 }
-
-
-# output "service_account_name" {
-#   value = kubernetes_service_account.aws_load_balancer_controller.metadata[0].name
-# }
-
-
 
 output "vpc_id" {
   description = "The ID of the VPC"
@@ -92,10 +54,10 @@ output "public_subnet_names" {
   value       = [for subnet in aws_subnet.public_subnets : subnet.tags["Name"]]
 }
 
-output "cluster_id" {
-  description = "The name/id of the EKS cluster"
-  value       = module.eks.cluster_id
-}
+# output "cluster_id" {
+#   description = "The id of the EKS cluster"
+#   value       = module.eks.cluster_id
+# }
 
 output "cluster_endpoint" {
   description = "Endpoint for EKS control plane"
@@ -128,3 +90,37 @@ output "lb_role_arn" {
 # output "super_thumbprint" {
 #   value = data.tls_certificate.eks.certificates[0].sha1_fingerprint
 # }
+
+# output "service_account_name" {
+#   value = kubernetes_service_account.aws_load_balancer_controller.metadata[0].name
+# }
+
+
+/*
+# Output the cluster name
+output "eks_cluster_name" {
+  value = module.eks.cluster_name
+}
+
+# Output the cluster endpoint
+output "eks_cluster_endpoint" {
+  value = module.eks.cluster_endpoint
+}
+
+# Output the node security group ID
+output "node_security_group_id" {
+  value = module.eks.node_security_group_id
+}
+
+
+# Output the Kubernetes configuration file
+output "kubeconfig" {
+  value = module.eks.kubeconfig
+}
+
+output "config_map_aws_auth" {
+  description = "A kubernetes configuration to authenticate to this EKS cluster."
+  value       = module.eks.config_map_aws_auth
+}
+
+*/

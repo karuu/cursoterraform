@@ -5,7 +5,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: gp2
+  storageClassName: gp3
   resources:
     requests:
       storage: 4Gi
@@ -19,7 +19,13 @@ spec:
   - name: app
     image: centos
     command: ["/bin/sh"]
-    args: ["-c", "while true; do echo $(date -u) >> /data/out.txt; sleep 5; done"]
+    # Cuando se inicie se iniciará una shell de bash
+    # con -c comando 
+    # while true bucle infinito
+    # do de u necho de la fecha en utc que se añade  a /data/out.txt con >>
+    # esperar 15 segundos
+    # repetir
+    args: ["-c", "while true; do echo $(date -u) >> /data/out.txt; sleep 15; done"]
     volumeMounts:
     - name: persistent-storage
       mountPath: /data
