@@ -82,6 +82,15 @@ output "public_subnet_ids" {
   value       = [for subnet in aws_subnet.public_subnets : subnet.id]
 }
 
+output "private_subnet_names" {
+  description = "List of Names of private subnets"
+  value       = [for subnet in aws_subnet.private_subnets : subnet.tags["Name"]]
+}
+
+output "public_subnet_names" {
+  description = "List of Names of public subnets"
+  value       = [for subnet in aws_subnet.public_subnets : subnet.tags["Name"]]
+}
 
 output "cluster_id" {
   description = "The name/id of the EKS cluster"

@@ -503,6 +503,22 @@ module "eks" {
   # you can disable the creation of the shared node security group with:
   create_node_security_group = false # default is true--------
 }
+module "ebs_csi_irsa_role" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+
+  role_name             = "ekscluster-ebs-csi" #"${var.cluster_name}-ebs-csi"
+  attach_ebs_csi_policy = true
+
+  oidc_providers = {
+    #ex = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+    }
+  }
+  #depends_on = [module.eks]
+}
+
 
 
 module "lb_role" {
@@ -532,10 +548,11 @@ resource "helm_release" "lb" {
   ]
   set {
     name  = "region"
-    value = var.region#"us-east-1"
+    value = var.region #"us-east-1"
   }
   set {
     name  = "replicaCount"
+    # Numero de replicas para el ALB, o sea, una instancia del controllador corriendo
     value = 1
   }
   set {
@@ -545,18 +562,21 @@ resource "helm_release" "lb" {
 
   set {
     name  = "image.repository"
+    # Imagen docker oficial AWS ECR 
     value = "602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-load-balancer-controller"
   }
 
   set {
     name  = "serviceAccount.create"
+    # seteado en falso porque helm NO debe crear un nuevo Service Account
+    # porque ya lo cree por fuera
     value = "false"
   }
 
   set {
     name  = "serviceAccount.name"
     value = "aws-load-balancer-controller"
-    #en lugar de ese ServiceAccount, usar el definido anteriormente
+    #en lugar de crear ese ServiceAccount, usar el definido anteriormente
     #value = kubernetes_service_account.aws_load_balancer_controller_sa.metadata[0].name
   }
 
@@ -573,11 +593,6 @@ resource "helm_release" "lb" {
   }
 }
 
-
-
-########### EXTRAS QUE NO ESTOY USANDO 
-
-# Esto quizás se debería borrar porque helm:release se encarga de crear los S.A 
 resource "kubernetes_service_account" "aws_load_balancer_controller_sa" {
   metadata {
     name      = "aws-load-balancer-controller"
@@ -589,19 +604,4 @@ resource "kubernetes_service_account" "aws_load_balancer_controller_sa" {
       # "eks.amazonaws.com/sts-regional-endpoints" = "true"
     }
   }
-}
-module "ebs_csi_irsa_role" {
-  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-
-  role_name             = "ekscluster-ebs-csi" #"${var.cluster_name}-ebs-csi"
-  attach_ebs_csi_policy = true
-
-  oidc_providers = {
-    #ex = {
-    main = {
-      provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
-    }
-  }
-  #depends_on = [module.eks]
 }
