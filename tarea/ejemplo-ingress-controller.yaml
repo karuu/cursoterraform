@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ejemplo-ingress
+  annotations:
+    #kubernetes.io/ingress.class: nginx
+
+    #external-dns.alpha.kubernetes.io/hostname: pendiente
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: ejemplo.loquesea.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ejemplo-servicio
+            port: 
+              number: 80
