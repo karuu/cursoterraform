@@ -17,6 +17,7 @@ data "aws_region" "current" {}
 }
 
 
+
 ## KC Knowledge Center re:Post AWS
 # https://repost.aws/knowledge-center/eks-vpc-subnet-discovery
 
@@ -33,7 +34,7 @@ resource "aws_subnet" "private_subnets" {
   map_public_ip_on_launch = false
   tags = {
     Name                              = each.key
-    Terraform                         = "true"
+    #Terraform                         = "true"
     "kubernetes.io/role/internal-elb" = 1
     # Tags para un internal load balancer              
   }
@@ -49,7 +50,7 @@ resource "aws_subnet" "public_subnets" {
   # Automatically Public IP 
   tags = {
     Name      = each.key
-    Terraform = "true"
+    #Terraform = "true"
     # La subnet puede ser utilizada por Kubernetes para crear Elastic 
     #Load Balancers (ELB) cuando se necesiten servicios de tipo LoadBalancer
     #Set to 1 or empty tag value for internet-facing load balancers"
@@ -73,7 +74,6 @@ resource "aws_internet_gateway" "internet_gateway" {
 #EIP for NAT Gateway
 # Ipv4 pública fija
 resource "aws_eip" "nat_gateway_eip" {
-
   depends_on = [aws_internet_gateway.internet_gateway]
   tags = {
     Name = "NAT Gateway Elastic IP"
@@ -81,22 +81,23 @@ resource "aws_eip" "nat_gateway_eip" {
 }
 
 #Create NAT Gateway
-# Tráfico saliente desde instancias privadas a internet
+# Tráfico saliente desde instancias privadas a internet 
 resource "aws_nat_gateway" "nat_gateway" {
   depends_on    = [aws_internet_gateway.internet_gateway]
   allocation_id = aws_eip.nat_gateway_eip.id
   subnet_id     = aws_subnet.public_subnets["public_subnet_1"].id
   tags = {
-    Name = "Gateway Tarea"
+    Name = "Gateway"
   }
 }
 
 
-# Route tables for public and private subnets
+# Tablas de ruteo para subnets públicas y privadas
 resource "aws_route_table" "public_route_table" {
 
   vpc_id = aws_vpc.vpc-tarea.id
   route {
+    # Acceso a internet mediante IGW
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.internet_gateway.id
   }
@@ -109,6 +110,7 @@ resource "aws_route_table" "private_route_table" {
   vpc_id = aws_vpc.vpc-tarea.id
 
   route {
+    # Acceso a internet a través del nat gateway, manteniendola inaccesible
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat_gateway.id
   }
@@ -154,7 +156,7 @@ resource "aws_security_group" "rds_sg" {
   vpc_id      = aws_vpc.vpc-tarea.id
 
   ingress {
-    description     = "Allow MySQL/Aurora traffic from EKS nodes and EC2"
+    description     = "Allow MySQL/Aurora traffic"
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
@@ -240,8 +242,11 @@ resource "aws_security_group_rule" "nodes_internal_communication" {
   description              = "Allow nodes to communicate with each other"
   from_port                = 0
   protocol                 = "-1"
+  #SG al que se le agrega la regla
   security_group_id        = aws_security_group.eks_nodes_sg.id
+  # Fuente del tráfico permitido
   source_security_group_id = aws_security_group.eks_nodes_sg.id
+  # 0-65535 todos los puertos
   to_port                  = 65535
   type                     = "ingress"
 }
@@ -271,7 +276,7 @@ resource "aws_iam_role" "eks_cluster_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action = "sts:AssumeRole"
+        Action = "sts:AssumeRole" 
         Effect = "Allow"
         Principal = {
           Service = "eks.amazonaws.com"
@@ -328,32 +333,6 @@ resource "aws_iam_role_policy_attachment" "ec2_container_registry_read_only" {
   role       = aws_iam_role.eks_node_role.name
 }
 
-
-########### ADDONS INTENTO DE FIX
-resource "aws_iam_policy" "eks_addon_policy" {
-  name        = "EKSAddonPolicy"
-  path        = "/"
-  description = "IAM policy for EKS Add-on operations"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "eks:DescribeAddonVersions"
-        ]
-        Resource = "*"
-      },
-    ]
-  })
-}
-
-# Adjuntar la nueva política al rol del clúster EKS
-resource "aws_iam_role_policy_attachment" "eks_addon_policy_attachment" {
-  policy_arn = aws_iam_policy.eks_addon_policy.arn
-  role       = aws_iam_role.eks_cluster_role.name
-}
 
 
 
@@ -413,21 +392,17 @@ module "eks" {
 
   cluster_name    = var.cluster_name #"eks-cluster2"
   cluster_version = "1.28"
- # Le otorgamos los permisos definidos anteriormente
+ # Se le ceden los permisos definidos anteriormente
   iam_role_arn = aws_iam_role.eks_cluster_role.arn
-  # Permite que los recursos dentro de la VPC se comuniquen 
-  # con el clúster sin salir a internet.
-  #cluster_endpoint_private_access = true
   # Acceso público al endopoint del cluster. lo que permite que recursos 
   #fuera de la VPC se comuniquen con el cluster a través de internet
   cluster_endpoint_public_access = true
 
   vpc_id     = aws_vpc.vpc-tarea.id
   # Preguntar si debo poner ambas subnets
-  subnet_ids = values(aws_subnet.private_subnets)[*].id  # concat(values(aws_subnet.public_subnets)[*].id, 
-  # No está asignada en los ejemplos de github
-  # Preguntar también :D 
-  # control_plane_subnet_ids =values(aws_subnet.private_subnets)[*].id
+  subnet_ids = concat(values(aws_subnet.public_subnets)[*].id, values(aws_subnet.private_subnets)[*].id )
+  # Preguntar también :D. No está asignada en los ejemplos de github
+  # control_plane_subnet_ids = values(aws_subnet.private_subnets)[*].id
 
   # Habilita la asignación de roles de IAM a los pods en k8s. 
   # (IAM Roles for Service Accounts)
@@ -438,13 +413,12 @@ module "eks" {
 
   eks_managed_node_group_defaults = {
     disk_size = 10
+    node_role_arn = aws_iam_role.eks_node_role.arn
     # aqui debiese ir mi id de sg adicional o dejo la configuración por defecto?
     #cluster_additional_security_group_ids = [aws_security_group.eks_cluster_sg.id]
-    node_role_arn = aws_iam_role.eks_node_role.arn
     #security_groups = [aws_security_group.eks_nodes_sg.id]
-    #vpc_security_group_ids = [aws_security_group.eks_cluster_sg.id]
-    #vpc_security_group_ids = [aws_security_group.ingress_ssh.id]
   }
+  # Modificaciones por no tener permisos:
   # Crear clave KMS para cifrar los datos del clúster
   create_kms_key = false
   # Crear grupo de cloudwatch par el cluster
@@ -455,12 +429,11 @@ module "eks" {
   cluster_addons = {
     aws-ebs-csi-driver = {
       most_recent = true
-      # addon_version =   data.aws_eks_addon_version.ebs_csi.version
       resolve_conflicts        = "OVERWRITE"
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+      # estos addons tengo entendido que son para que el token de service account no tenga problemas
       #Resolución de DNS dentro del clúster
       # coredns = {
-      # # :)
       # }
       # #mantiene las reglas de red en los pods y svc dentro del clúster
       # # Es decir, solicitudes correctamente dirigidas + LB básico
@@ -476,34 +449,22 @@ module "eks" {
   }
 
   # Definición de grupos de nodos administrados por EKS
-  eks_managed_node_groups = {
-    # Grupo llamado nodes
-    nodes = {
-      min_size     = 2
-      max_size     = 4
-      desired_size = 3
+  eks_managed_node_groups = var.eks_managed_node_groups
+  # {
+  #   # Grupo llamado nodes
+  #   nodes = {
+  #     min_size     = 2
+  #     max_size     = 4
+  #     desired_size = 3
 
-      instance_types = ["t3.small"]
-      capacity_type  = "SPOT"
+  #     instance_types = ["t3.small"]
+  #     capacity_type  = "SPOT"
+  #   }
+  # }
 
-    }
-  }
   tags = {
     Environment = "test"
   }
-  # No le puedo agregar el rol, asi que le adjunto las politicas directamente:
-  # Intento de permisos 
-  iam_role_additional_policies = {
-    # EKS cree, actualice y elimine clústers y nodos.
-    AmazonEKSClusterPolicy = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-    # Interacción de EKS con otros servicios
-    AmazonEKSServicePolicy = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
-    # Prueba para ver si es necesario esto
-    #AddonVersions          = aws_iam_policy.eks_describe_addon_versions.arn
-  }
-  # If you want to use the cluster primary security group, 
-  # you can disable the creation of the shared node security group with:
-  create_node_security_group = false # default is true--------
 }
 module "ebs_csi_irsa_role" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
@@ -543,8 +504,8 @@ resource "kubernetes_service_account" "aws_load_balancer_controller_sa" {
     namespace = "kube-system"
     annotations = {
       "eks.amazonaws.com/role-arn" = module.lb_role.iam_role_arn
-      # Buscar. al parecer se recomieda para mejorar la latencia y disponibilidad
-      # "eks.amazonaws.com/sts-regional-endpoints" = "true"
+      # Buscar. al parecer se recomienda para mejorar la latencia y disponibilidad
+      #"eks.amazonaws.com/sts-regional-endpoints" = "true"
     }
   }
 }
@@ -601,4 +562,3 @@ resource "helm_release" "lb" {
     value = module.lb_role.iam_role_arn
   }
 }
-

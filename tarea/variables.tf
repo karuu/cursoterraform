@@ -3,12 +3,6 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "vpc_name" {
-  description = "Name of the VPC"
-  type        = string
-  default     = "eks-cluster2"
-}
-
 variable "vpc_cidr" {
   description = "CIDR block for VPC"
   default     = "10.0.0.0/16"
@@ -48,3 +42,30 @@ variable "cluster_name" {
   default     = "eks-cluster2"
 }
 
+
+variable "eks_managed_node_groups" {
+  description = "Map of EKS managed node group definitions to create"
+  type = map(object({
+    min_size       = number
+    max_size       = number
+    desired_size   = number
+    instance_types = list(string)
+    capacity_type  = string
+  }))
+  default = {
+    default_node_small = {
+      min_size       = 2
+      max_size       = 4
+      desired_size   = 3
+      instance_types = ["t3.small"]
+      capacity_type  = "SPOT"
+    },
+    default_node_medium = {
+      min_size       = 1
+      max_size       = 3
+      desired_size   = 2
+      instance_types = ["t3.medium"]
+      capacity_type  = "SPOT"
+    }
+  }
+}
