@@ -91,16 +91,16 @@ resource "aws_security_group" "eks_nodes_sg" {
 
 # Rule: Allow nodes to communicate with each other
 resource "aws_security_group_rule" "nodes_internal_communication" {
-  description              = "Allow nodes to communicate with each other"
-  from_port                = 0
-  protocol                 = "-1"
+  description = "Allow nodes to communicate with each other"
+  from_port   = 0
+  protocol    = "-1"
   #SG al que se le agrega la regla
-  security_group_id        = aws_security_group.eks_nodes_sg.id
+  security_group_id = aws_security_group.eks_nodes_sg.id
   # Fuente del tráfico permitido
   source_security_group_id = aws_security_group.eks_nodes_sg.id
   # 0-65535 todos los puertos
-  to_port                  = 65535
-  type                     = "ingress"
+  to_port = 65535
+  type    = "ingress"
 }
 
 # Rule: Allow cluster to communicate with worker nodes

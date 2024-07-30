@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaler-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaler-test
+  template:
+    metadata:
+      labels:
+        app: autoscaler-test
+    spec:
+      containers:
+      - name: autoscaler-test
+        image: nginx
+        resources:
+          requests:
+            cpu: 500m
+            memory: 500Mi

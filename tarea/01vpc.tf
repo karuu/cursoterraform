@@ -3,11 +3,11 @@
 # VPC
 ################################################################################
 
- resource "aws_vpc" "vpc-tarea" {
+resource "aws_vpc" "vpc-tarea" {
   cidr_block = var.vpc_cidr
   tags = {
     Name   = "EKS-VPC"
-    Region = "data.aws_region.current.name" 
+    Region = "data.aws_region.current.name"
   }
 }
 
@@ -28,7 +28,7 @@ resource "aws_subnet" "private_subnets" {
 
   map_public_ip_on_launch = false
   tags = {
-    Name                              = each.key
+    Name = each.key
     #Terraform                         = "true"
     "kubernetes.io/role/internal-elb" = 1
     # Tags para un internal load balancer              
@@ -44,7 +44,7 @@ resource "aws_subnet" "public_subnets" {
   map_public_ip_on_launch = true
   # Automatically Public IP 
   tags = {
-    Name      = each.key
+    Name = each.key
     #Terraform = "true"
     # La subnet puede ser utilizada por Kubernetes para crear Elastic 
     #Load Balancers (ELB) cuando se necesiten servicios de tipo LoadBalancer

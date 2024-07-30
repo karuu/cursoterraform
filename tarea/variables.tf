@@ -43,6 +43,25 @@ variable "cluster_name" {
 }
 
 
+
+variable "cluster_addons" {
+  description = "Mapeo de los clusters con sus respectivos archivos de configuración"
+  type = map(object({
+    most_recent              = optional(bool)
+    version                  = optional(string)
+    resolve_conflicts        = optional(string)
+    preserve                 = optional(bool)
+    service_account_role_arn = optional(string)
+  }))
+  default = {
+    aws-ebs-csi-driver = {
+      most_recent       = true
+      resolve_conflicts = "OVERWRITE"
+      # No se pueden usar módulos en las variables
+      #service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
+  }
+}
 variable "eks_managed_node_groups" {
   description = "Map of EKS managed node group definitions to create"
   type = map(object({
@@ -53,19 +72,40 @@ variable "eks_managed_node_groups" {
     capacity_type  = string
   }))
   default = {
-    default_node_small = {
+    nodes = {
       min_size       = 2
       max_size       = 4
       desired_size   = 3
       instance_types = ["t3.small"]
       capacity_type  = "SPOT"
-    },
-    default_node_medium = {
-      min_size       = 1
-      max_size       = 3
-      desired_size   = 2
-      instance_types = ["t3.medium"]
-      capacity_type  = "SPOT"
-    }
+      # subnets = 
+    } #,
+    # extra_node_group = {
+    #   min_size       = 1
+    #   max_size       = 3
+    #   desired_size   = 2
+    #   instance_types = ["t3.medium"]
+    #   capacity_type  = "ON_DEMAND"
+    # }
   }
 }
+
+variable "settings" {
+  default = {
+    extraArgs = {
+      "scale-down-delay-after-add" = "2m"
+      "scale-down-unneeded-time"   = "2m"
+    }
+  }
+  description = "Settings for AutoScaler."
+}
+
+variable "helm_extra_args" {
+  type = map(string)
+  default = {
+    "balance-similar-node-groups" = "true",
+    "skip-nodes-with-system-pods" = "false"
+  }
+  description = "Extra arguments to the Cluster Autoscaler Helm chart."
+}
+
