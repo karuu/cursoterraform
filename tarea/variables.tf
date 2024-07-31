@@ -45,7 +45,7 @@ variable "cluster_name" {
 
 
 variable "cluster_addons" {
-  description = "Mapeo de los clusters con sus respectivos archivos de configuración"
+  description = "Mapeo de los addons con sus respectivos archivos de configuración"
   type = map(object({
     most_recent              = optional(bool)
     version                  = optional(string)
@@ -80,12 +80,12 @@ variable "eks_managed_node_groups" {
       capacity_type  = "SPOT"
       # subnets = 
     } #,
-    # extra_node_group = {
+    # node_group = {
     #   min_size       = 1
     #   max_size       = 3
     #   desired_size   = 2
     #   instance_types = ["t3.medium"]
-    #   capacity_type  = "ON_DEMAND"
+    #   capacity_type  = "SPOT"
     # }
   }
 }
@@ -106,6 +106,6 @@ variable "helm_extra_args" {
     "balance-similar-node-groups" = "true",
     "skip-nodes-with-system-pods" = "false"
   }
-  description = "Extra arguments to the Cluster Autoscaler Helm chart."
+  description = "Extra arguments to the AS Helm chart."
 }
 

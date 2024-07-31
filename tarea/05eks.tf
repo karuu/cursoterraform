@@ -42,48 +42,14 @@ module "eks" {
   cluster_encryption_config = {}
 
   cluster_addons = local.final_addons
-  #cluster_addons            = var.cluster_addons
-  #   cluster_addons = {
-  #     aws-ebs-csi-driver = {
-  #       most_recent = true
-  #       resolve_conflicts        = "OVERWRITE"
-  #       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
-  #       #Resolución de DNS dentro del clúster
-  #       # coredns = {
-  #       # }
-  #       # #mantiene las reglas de red en los pods y svc dentro del clúster
-  #       # # Es decir, solicitudes correctamente dirigidas + LB básico
-  #       # kube-proxy = {
-
-  #       # }
-  #       # #Ingregración del clúster con la red VPC de AWS
-  #       # vpc-cni = {
-  #       #   most_recent = true
-  #       # }
-  #     }
-
-
 
   # Definición de grupos de nodos administrados por EKS
   eks_managed_node_groups = var.eks_managed_node_groups
-  # Con esto, se debiesen crear los dos grupos de nodos definidos en las variables
-  # {
-  #   # Grupo llamado nodes
-  #   nodes = {
-  #     min_size     = 2
-  #     max_size     = 4
-  #     desired_size = 3
-
-  #     instance_types = ["t3.small"]
-  #     capacity_type  = "SPOT"
-  #   }
-  # }
 
   tags = {
     Environment = "test"
   }
 }
-
 
 
 module "lb_irsa_role" {

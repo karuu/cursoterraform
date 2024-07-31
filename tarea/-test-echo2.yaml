@@ -1,0 +1,68 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: echo-app
+  template:
+    metadata:
+      labels:
+        app: echo-app
+    spec:
+      containers:
+      - name: http-echo
+        image: hashicorp/http-echo:latest
+        args:
+          - "-text=Pod: $(POD_NAME) | IP: $(POD_IP) | Node: $(NODE_NAME)"
+        ports:
+        - containerPort: 5678
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service
+spec:
+  selector:
+    app: echo-app
+  ports:
+  - port: 80
+    targetPort: 5678
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo-ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/subnets: subnet-007b6626a66660553, subnet-0a1a66bc9c19dab7f
+    alb.ingress.kubernetes.io/target-type: 'ip'
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+spec:
+  ingressClassName: alb
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: echo-service
+            port: 
+              number: 80
