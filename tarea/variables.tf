@@ -106,6 +106,6 @@ variable "helm_extra_args" {
     "balance-similar-node-groups" = "true",
     "skip-nodes-with-system-pods" = "false"
   }
-  description = "Extra arguments to the AS Helm chart."
+  description = "Extra arguments."
 }
 
